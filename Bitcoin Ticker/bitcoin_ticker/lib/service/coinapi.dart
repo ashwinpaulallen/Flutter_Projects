@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import '../coin_data.dart';
 
-const String apiKey = '225749A8-4BD6-4303-82F8-D967209734D4';
+const String apiKey = 'C18C1B32-1793-4E05-AA06-60D244E832FA';
 
 class CoinApi {
   final String currencyType;

@@ -13,13 +13,11 @@ class PriceScreen extends StatefulWidget {
 class _PriceScreenState extends State<PriceScreen> {
   String selectedCurrency = 'USD';
   var coinData;
-  bool loader = false;
+  bool loader = true;
 
   void initState() {
-    loader = true;
     super.initState();
     getCoinRates('USD');
-    loader = false;
   }
 
   DropdownButton<String> getDropDownButton() {
@@ -33,10 +31,8 @@ class _PriceScreenState extends State<PriceScreen> {
       items: cList,
       onChanged: (val) {
         setState(() {
-          loader = true;
           selectedCurrency = val;
           getCoinRates(val);
-          loader = false;
         });
       },
     );
@@ -52,17 +48,21 @@ class _PriceScreenState extends State<PriceScreen> {
       backgroundColor: Colors.lightBlue,
       itemExtent: 32.0,
       onSelectedItemChanged: (index) {
-        loader = true;
         getCoinRates(currenciesList[index]);
-        loader = false;
       },
       children: cList,
     );
   }
 
   getCoinRates(currency) async {
+    setState(() {
+      loader = true;
+    });
     CoinApi coin = CoinApi(currencyType: currency);
     coinData = await coin.getCurrency();
+    setState(() {
+      loader = false;
+    });
   }
 
   List<Widget> setCurrencyButton() {
@@ -79,7 +79,7 @@ class _PriceScreenState extends State<PriceScreen> {
           child: coinButton(
               selectedCurrency: selectedCurrency,
               coinName: cryptoList[i],
-              rate: coinData[cryptoList[i]].toInt()),
+              rate: coinData != null ? coinData[cryptoList[i]].toInt() : 0),
         ),
       ));
     }
@@ -102,7 +102,9 @@ class _PriceScreenState extends State<PriceScreen> {
                   padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: setCurrencyButton(),
+                    children: coinData['BTC'] != null
+                        ? setCurrencyButton()
+                        : [Text('Select Currency')],
                   ),
                 ),
                 Container(
