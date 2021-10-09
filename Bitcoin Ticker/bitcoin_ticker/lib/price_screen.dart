@@ -1,4 +1,9 @@
+import 'package:bitcoin_ticker/coin_data.dart';
+import 'package:bitcoin_ticker/loader.dart';
+import 'package:bitcoin_ticker/service/coinapi.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 
 class PriceScreen extends StatefulWidget {
   @override
@@ -6,45 +11,140 @@ class PriceScreen extends StatefulWidget {
 }
 
 class _PriceScreenState extends State<PriceScreen> {
+  String selectedCurrency = 'USD';
+  var coinData;
+  bool loader = false;
+
+  void initState() {
+    loader = true;
+    super.initState();
+    getCoinRates('USD');
+    loader = false;
+  }
+
+  DropdownButton<String> getDropDownButton() {
+    List<DropdownMenuItem<String>> cList = [];
+    for (String curr in currenciesList) {
+      cList.add(DropdownMenuItem(child: Text(curr), value: curr));
+    }
+
+    return DropdownButton(
+      value: selectedCurrency,
+      items: cList,
+      onChanged: (val) {
+        setState(() {
+          loader = true;
+          selectedCurrency = val;
+          getCoinRates(val);
+          loader = false;
+        });
+      },
+    );
+  }
+
+  CupertinoPicker getCupertinoPicker() {
+    List<Widget> cList = [];
+    for (String curr in currenciesList) {
+      cList.add(Text(curr));
+    }
+
+    return CupertinoPicker(
+      backgroundColor: Colors.lightBlue,
+      itemExtent: 32.0,
+      onSelectedItemChanged: (index) {
+        loader = true;
+        getCoinRates(currenciesList[index]);
+        loader = false;
+      },
+      children: cList,
+    );
+  }
+
+  getCoinRates(currency) async {
+    CoinApi coin = CoinApi(currencyType: currency);
+    coinData = await coin.getCurrency();
+  }
+
+  List<Widget> setCurrencyButton() {
+    List<Widget> buttonList = [];
+    for (int i = 0; i < cryptoList.length; i++) {
+      buttonList.add(Card(
+        color: Colors.lightBlueAccent,
+        elevation: 5.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
+          child: coinButton(
+              selectedCurrency: selectedCurrency,
+              coinName: cryptoList[i],
+              rate: coinData[cryptoList[i]].toInt()),
+        ),
+      ));
+    }
+    return buttonList;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('🤑 Coin Ticker'),
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
-            child: Card(
-              color: Colors.lightBlueAccent,
-              elevation: 5.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
-                child: Text(
-                  '1 BTC = ? USD',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
+    return loader
+        ? Loader()
+        : Scaffold(
+            appBar: AppBar(
+              title: Text('🤑 Coin Ticker'),
+            ),
+            body: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: setCurrencyButton(),
                   ),
                 ),
-              ),
+                Container(
+                  height: 150.0,
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.only(bottom: 30.0),
+                  color: Colors.lightBlue,
+                  child: Platform.isIOS
+                      ? getCupertinoPicker()
+                      : getDropDownButton(),
+                ),
+              ],
             ),
-          ),
-          Container(
-            height: 150.0,
-            alignment: Alignment.center,
-            padding: EdgeInsets.only(bottom: 30.0),
-            color: Colors.lightBlue,
-            child: null,
-          ),
-        ],
+          );
+  }
+}
+
+class coinButton extends StatelessWidget {
+  const coinButton({
+    Key key,
+    @required this.selectedCurrency,
+    @required this.coinName,
+    @required this.rate,
+  }) : super(key: key);
+
+  final String selectedCurrency;
+  final String coinName;
+  final int rate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '1 ' +
+          this.coinName +
+          ' = ' +
+          this.rate.toString() +
+          ' ' +
+          selectedCurrency,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 20.0,
+        color: Colors.white,
       ),
     );
   }
